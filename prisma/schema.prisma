@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String
+  linkToken String?  @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Employee {
+  id        String      @id @default(cuid())
+  name      String
+  phone     String?
+  role      String      @default("Cashier")
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  entries   CashEntry[]
+}
+
+model Expense {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  entries   CashEntry[]
+}
+
+enum CashType {
+  IN
+  OUT
+}
+
+model CashEntry {
+  id             String               @id @default(cuid())
+  type           CashType
+  employeeId     String?
+  employee       Employee?            @relation(fields: [employeeId], references: [id])
+  expenseId      String?
+  expense        Expense?             @relation(fields: [expenseId], references: [id])
+  date           DateTime             @db.Date
+  remark         String?
+  reason         String?
+  totalAmount    Int                  @default(0)
+  totalNotes     Int                  @default(0)
+  totalMissing   Int                  @default(0)
+  createdAt      DateTime             @default(now())
+  denominations  DenominationCount[]
+
+  @@index([date, type])
+  @@index([employeeId])
+  @@index([expenseId])
+}
+
+model DenominationCount {
+  id            String    @id @default(cuid())
+  cashEntryId   String
+  cashEntry     CashEntry @relation(fields: [cashEntryId], references: [id], onDelete: Cascade)
+  denomination  Int
+  presentCount  Int       @default(0)
+  missingCount  Int       @default(0)
+
+  @@unique([cashEntryId, denomination])
+}

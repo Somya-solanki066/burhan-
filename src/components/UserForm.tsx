@@ -1,0 +1,54 @@
+"use client";
+
+import { useActionState } from "react";
+import { createUserAction } from "@/app/actions/users";
+
+const initial = { error: "", success: "" };
+
+export function UserForm() {
+  const [state, action, pending] = useActionState(createUserAction, initial);
+
+  return (
+    <form action={action} className="grid gap-4 rounded-2xl border border-stone-200 bg-white p-5 md:grid-cols-4">
+      <label className="space-y-2">
+        <span className="text-sm font-medium text-stone-600">Name</span>
+        <input
+          name="name"
+          required
+          placeholder="Display name"
+          className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:ring-4 focus:ring-[#1f7a60]/15"
+        />
+      </label>
+      <label className="space-y-2">
+        <span className="text-sm font-medium text-stone-600">Login ID</span>
+        <input
+          name="username"
+          required
+          placeholder="username"
+          className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:ring-4 focus:ring-[#1f7a60]/15"
+        />
+      </label>
+      <label className="space-y-2">
+        <span className="text-sm font-medium text-stone-600">Password</span>
+        <input
+          name="password"
+          type="text"
+          required
+          placeholder="Set password"
+          className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:ring-4 focus:ring-[#1f7a60]/15"
+        />
+      </label>
+      <div className="flex flex-col justify-end gap-2">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-xl bg-[#145c47] px-4 py-3 font-semibold text-white hover:bg-[#0f3d2e] disabled:opacity-60"
+        >
+          {pending ? "Saving..." : "Create user"}
+        </button>
+        {state?.error ? <p className="text-sm text-rose-700">{state.error}</p> : null}
+        {state?.success ? <p className="text-sm text-[#145c47]">{state.success}</p> : null}
+      </div>
+    </form>
+  );
+}
