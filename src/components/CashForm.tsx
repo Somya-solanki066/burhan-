@@ -4,17 +4,15 @@ import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import { createCashEntryAction } from "@/app/actions/cash";
 import {
-  DENOMINATION_STYLE,
-  DENOMINATIONS,
   amountFromNotes,
   emptyNoteCounts,
-  totalMissingNotes,
   totalPresentNotes,
   type Denomination,
   type NoteCount,
 } from "@/lib/denominations";
 import { formatINR, formatNumber } from "@/lib/format";
 import { todayISO } from "@/lib/dates";
+import { NoteCountBoxes } from "@/components/NoteCountBoxes";
 
 type Employee = { id: string; name: string; role: string };
 type Expense = { id: string; name: string };
@@ -34,17 +32,12 @@ export function CashForm({
 
   const totalAmount = useMemo(() => amountFromNotes(notes), [notes]);
   const present = useMemo(() => totalPresentNotes(notes), [notes]);
-  const missing = useMemo(() => totalMissingNotes(notes), [notes]);
 
-  function update(
-    denomination: Denomination,
-    field: "presentCount" | "missingCount",
-    value: number,
-  ) {
+  function update(denomination: Denomination, value: number) {
     setNotes((current) =>
       current.map((note) =>
         note.denomination === denomination
-          ? { ...note, [field]: Math.max(0, value) }
+          ? { ...note, presentCount: Math.max(0, value) }
           : note,
       ),
     );
@@ -128,111 +121,9 @@ export function CashForm({
         </label>
       ) : null}
 
-      <div className="grid gap-3">
-        {DENOMINATIONS.map((denomination) => {
-          const note = notes.find((item) => item.denomination === denomination)!;
-          const style = DENOMINATION_STYLE[denomination];
-          return (
-            <div
-              key={denomination}
-              className={`grid items-center gap-4 rounded-2xl border p-4 md:grid-cols-[140px_1fr_1fr_140px] ${style.bg} ${style.border}`}
-            >
-              <div>
-                <p className={`text-xs font-semibold uppercase tracking-wide ${style.text}`}>
-                  Note
-                </p>
-                <p className={`text-2xl font-bold ${style.text}`}>₹{denomination}</p>
-              </div>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-stone-600">
-                  Notes present
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      update(denomination, "presentCount", note.presentCount - 1)
-                    }
-                    className="h-10 w-10 rounded-lg bg-white/80 text-lg font-semibold"
-                  >
-                    −
-                  </button>
-                  <input
-                    name={`present_${denomination}`}
-                    type="number"
-                    min={0}
-                    value={note.presentCount}
-                    onChange={(event) =>
-                      update(
-                        denomination,
-                        "presentCount",
-                        Number(event.target.value) || 0,
-                      )
-                    }
-                    className="w-full rounded-lg border border-black/5 bg-white px-3 py-2 text-center font-semibold"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      update(denomination, "presentCount", note.presentCount + 1)
-                    }
-                    className="h-10 w-10 rounded-lg bg-white/80 text-lg font-semibold"
-                  >
-                    +
-                  </button>
-                </div>
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-stone-600">
-                  Notes missing
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      update(denomination, "missingCount", note.missingCount - 1)
-                    }
-                    className="h-10 w-10 rounded-lg bg-white/80 text-lg font-semibold"
-                  >
-                    −
-                  </button>
-                  <input
-                    name={`missing_${denomination}`}
-                    type="number"
-                    min={0}
-                    value={note.missingCount}
-                    onChange={(event) =>
-                      update(
-                        denomination,
-                        "missingCount",
-                        Number(event.target.value) || 0,
-                      )
-                    }
-                    className="w-full rounded-lg border border-black/5 bg-white px-3 py-2 text-center font-semibold"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      update(denomination, "missingCount", note.missingCount + 1)
-                    }
-                    className="h-10 w-10 rounded-lg bg-white/80 text-lg font-semibold"
-                  >
-                    +
-                  </button>
-                </div>
-              </label>
-              <div className="text-right">
-                <p className="text-xs text-stone-500">Amount</p>
-                <p className={`text-lg font-bold ${style.text}`}>
-                  {formatINR(note.presentCount * denomination)}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <NoteCountBoxes notes={notes} onChange={update} />
 
-      <div className="grid gap-3 rounded-2xl bg-[#0f3d2e] p-5 text-white md:grid-cols-4">
+      <div className="grid gap-3 rounded-2xl bg-[#0f3d2e] p-5 text-white md:grid-cols-3">
         <div>
           <p className="text-xs uppercase tracking-wide text-emerald-200/70">
             Total amount
@@ -244,12 +135,6 @@ export function CashForm({
             Notes present
           </p>
           <p className="mt-1 text-2xl font-semibold">{formatNumber(present)}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-wide text-emerald-200/70">
-            Notes missing
-          </p>
-          <p className="mt-1 text-2xl font-semibold">{formatNumber(missing)}</p>
         </div>
         <button
           type="submit"

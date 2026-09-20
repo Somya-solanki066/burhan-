@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { parseISODate } from "@/lib/dates";
+import { dayRange } from "@/lib/dates";
 import { DENOMINATIONS, type Denomination } from "@/lib/denominations";
 
 export async function getActiveEmployees() {
@@ -49,10 +49,8 @@ export async function getAllExpenses() {
 }
 
 export async function getDaySummary(dateISO: string) {
-  const date = parseISODate(dateISO);
-
   const entries = await prisma.cashEntry.findMany({
-    where: { date },
+    where: { date: dayRange(dateISO) },
     include: {
       employee: true,
       expense: true,
@@ -68,15 +66,10 @@ export async function getDaySummary(dateISO: string) {
   const totalOut = outEntries.reduce((sum, entry) => sum + entry.totalAmount, 0);
   const notesIn = inEntries.reduce((sum, entry) => sum + entry.totalNotes, 0);
   const notesOut = outEntries.reduce((sum, entry) => sum + entry.totalNotes, 0);
-  const missingIn = inEntries.reduce((sum, entry) => sum + entry.totalMissing, 0);
-  const missingOut = outEntries.reduce((sum, entry) => sum + entry.totalMissing, 0);
 
   const byNote = DENOMINATIONS.map((denomination) => {
-    const inCount = sumDenom(inEntries, denomination, "presentCount");
-    const outCount = sumDenom(outEntries, denomination, "presentCount");
-    const missingCount =
-      sumDenom(inEntries, denomination, "missingCount") +
-      sumDenom(outEntries, denomination, "missingCount");
+    const inCount = sumDenom(inEntries, denomination);
+    const outCount = sumDenom(outEntries, denomination);
 
     return {
       denomination,
@@ -86,7 +79,6 @@ export async function getDaySummary(dateISO: string) {
       inAmount: inCount * denomination,
       outAmount: outCount * denomination,
       netAmount: (inCount - outCount) * denomination,
-      missingCount,
     };
   });
 
@@ -126,9 +118,6 @@ export async function getDaySummary(dateISO: string) {
     notesIn,
     notesOut,
     notesNet: notesIn - notesOut,
-    missingIn,
-    missingOut,
-    missingTotal: missingIn + missingOut,
     byNote,
     byEmployee: [...employeeMap.values()].sort(
       (a, b) => b.inAmount + b.outAmount - (a.inAmount + a.outAmount),
@@ -139,14 +128,13 @@ export async function getDaySummary(dateISO: string) {
 
 function sumDenom(
   entries: {
-    denominations: { denomination: number; presentCount: number; missingCount: number }[];
+    denominations: { denomination: number; presentCount: number }[];
   }[],
   denomination: Denomination,
-  field: "presentCount" | "missingCount",
 ) {
   return entries.reduce((sum, entry) => {
     const row = entry.denominations.find((item) => item.denomination === denomination);
-    return sum + (row ? row[field] : 0);
+    return sum + (row ? row.presentCount : 0);
   }, 0);
 }
 
@@ -157,7 +145,7 @@ export async function getFilteredEntries(filters: {
 }) {
   return prisma.cashEntry.findMany({
     where: {
-      date: filters.date ? parseISODate(filters.date) : undefined,
+      date: filters.date ? dayRange(filters.date) : undefined,
       type: filters.type ? filters.type : undefined,
       employeeId: filters.employeeId || undefined,
     },
@@ -168,5 +156,19 @@ export async function getFilteredEntries(filters: {
     },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     take: 200,
+  });
+}
+
+export async function getUserDayEntries(userId: string, dateISO: string) {
+  return prisma.cashEntry.findMany({
+    where: {
+      createdByUserId: userId,
+      date: dayRange(dateISO),
+    },
+    include: {
+      employee: true,
+      denominations: { orderBy: { denomination: "desc" } },
+    },
+    orderBy: { createdAt: "desc" },
   });
 }

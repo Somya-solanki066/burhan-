@@ -8,7 +8,6 @@ import { parseISODate, todayISO } from "@/lib/dates";
 import {
   DENOMINATIONS,
   amountFromNotes,
-  totalMissingNotes,
   totalPresentNotes,
   type NoteCount,
 } from "@/lib/denominations";
@@ -20,10 +19,7 @@ function parseNotes(formData: FormData): NoteCount[] {
       0,
       Number(formData.get(`present_${denomination}`)) || 0,
     ),
-    missingCount: Math.max(
-      0,
-      Number(formData.get(`missing_${denomination}`)) || 0,
-    ),
+    missingCount: 0,
   }));
 }
 
@@ -69,9 +65,8 @@ export async function createCashEntryAction(
 
   const totalAmount = amountFromNotes(notes);
   const totalNotes = totalPresentNotes(notes);
-  const totalMissing = totalMissingNotes(notes);
 
-  if (totalNotes === 0 && totalMissing === 0) {
+  if (totalNotes === 0) {
     return { error: "Enter at least one note count." };
   }
 
@@ -85,7 +80,7 @@ export async function createCashEntryAction(
       reason,
       totalAmount,
       totalNotes,
-      totalMissing,
+      totalMissing: 0,
       denominations: {
         create: notes.map((note) => ({
           denomination: note.denomination,
@@ -101,14 +96,15 @@ export async function createCashEntryAction(
   revalidatePath("/cash-in");
   revalidatePath("/cash-out");
   revalidatePath("/expenses");
-  redirect("/dashboard");
+  redirect(`/dashboard?date=${dateValue}`);
 }
 
 export async function createUserNoteAction(_: unknown, formData: FormData) {
-  await requireUser();
+  const session = await requireUser();
 
   const employeeId = String(formData.get("employeeId") || "").trim();
   const dateValue = String(formData.get("date") || todayISO());
+  const remark = String(formData.get("remark") || "").trim();
   const notes = parseNotes(formData);
 
   if (!employeeId) {
@@ -120,11 +116,20 @@ export async function createUserNoteAction(_: unknown, formData: FormData) {
     return { error: "Please select a valid employee.", success: "" };
   }
 
+  const creator =
+    (await prisma.user.findUnique({
+      where: { id: session.id },
+      select: { id: true },
+    })) ??
+    (await prisma.user.findUnique({
+      where: { username: session.username },
+      select: { id: true },
+    }));
+
   const totalAmount = amountFromNotes(notes);
   const totalNotes = totalPresentNotes(notes);
-  const totalMissing = totalMissingNotes(notes);
 
-  if (totalNotes === 0 && totalMissing === 0) {
+  if (totalNotes === 0) {
     return { error: "Enter at least one note count.", success: "" };
   }
 
@@ -132,10 +137,12 @@ export async function createUserNoteAction(_: unknown, formData: FormData) {
     data: {
       type: "IN",
       employeeId,
+      createdByUserId: creator?.id ?? null,
       date: parseISODate(dateValue),
+      remark: remark || null,
       totalAmount,
       totalNotes,
-      totalMissing,
+      totalMissing: 0,
       denominations: {
         create: notes.map((note) => ({
           denomination: note.denomination,

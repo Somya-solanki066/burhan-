@@ -26,6 +26,7 @@ model User {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  entries   CashEntry[]
 }
 
 model Employee {
@@ -60,6 +61,8 @@ model CashEntry {
   employee       Employee?            @relation(fields: [employeeId], references: [id])
   expenseId      String?
   expense        Expense?             @relation(fields: [expenseId], references: [id])
+  createdByUserId String?
+  createdByUser   User?               @relation(fields: [createdByUserId], references: [id])
   date           DateTime             @db.Date
   remark         String?
   reason         String?
@@ -72,6 +75,7 @@ model CashEntry {
   @@index([date, type])
   @@index([employeeId])
   @@index([expenseId])
+  @@index([createdByUserId])
 }
 
 model DenominationCount {

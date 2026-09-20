@@ -1,7 +1,8 @@
 import { getActiveEmployees, getFilteredEntries } from "@/lib/queries";
-import { formatDisplayDate } from "@/lib/dates";
+import { dateToISO, formatDisplayDate, todayISO } from "@/lib/dates";
 import { formatINR, formatNumber } from "@/lib/format";
 import { DeleteEntryButton } from "@/components/DeleteEntryButton";
+import { EntriesFilter } from "@/components/EntriesFilter";
 
 export default async function EntriesPage({
   searchParams,
@@ -9,7 +10,7 @@ export default async function EntriesPage({
   searchParams: Promise<{ date?: string; type?: string; employeeId?: string }>;
 }) {
   const params = await searchParams;
-  const date = params.date || "";
+  const date = params.date || todayISO();
   const type = params.type === "IN" || params.type === "OUT" ? params.type : "";
   const employeeId = params.employeeId || "";
   const [entries, employees] = await Promise.all([
@@ -31,38 +32,12 @@ export default async function EntriesPage({
         <h1 className="text-3xl font-semibold">All entries</h1>
       </header>
 
-      <form className="grid gap-3 rounded-2xl border border-stone-200 bg-white p-4 md:grid-cols-4">
-        <input
-          type="date"
-          name="date"
-          defaultValue={date}
-          className="rounded-xl border border-stone-200 px-4 py-3"
-        />
-        <select
-          name="type"
-          defaultValue={type}
-          className="rounded-xl border border-stone-200 px-4 py-3"
-        >
-          <option value="">In + Out</option>
-          <option value="IN">Cash In</option>
-          <option value="OUT">Cash Out</option>
-        </select>
-        <select
-          name="employeeId"
-          defaultValue={employeeId}
-          className="rounded-xl border border-stone-200 px-4 py-3"
-        >
-          <option value="">All employees</option>
-          {employees.map((employee) => (
-            <option key={employee.id} value={employee.id}>
-              {employee.name}
-            </option>
-          ))}
-        </select>
-        <button className="rounded-xl bg-[#145c47] px-4 py-3 font-medium text-white">
-          Filter
-        </button>
-      </form>
+      <EntriesFilter
+        date={date}
+        type={type}
+        employeeId={employeeId}
+        employees={employees}
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Summary label="Filtered In" value={formatINR(totalIn)} />
@@ -98,11 +73,15 @@ export default async function EntriesPage({
                     </span>
                   </p>
                   <p className="text-sm text-stone-500">
-                    {formatDisplayDate(entry.date.toISOString().slice(0, 10))}
+                    {formatDisplayDate(dateToISO(entry.date))}
                     {entry.employee ? ` · ${entry.employee.name}` : ""}
                     {entry.expense ? ` · ${entry.expense.name}` : ""}
-                    {entry.remark ? ` · ${entry.remark}` : ""}
                   </p>
+                  {entry.remark ? (
+                    <p className="mt-2 rounded-xl bg-[#f7f3ec] px-3 py-2 text-sm text-stone-700">
+                      Remark: {entry.remark}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="text-right">
                   <p
@@ -114,21 +93,19 @@ export default async function EntriesPage({
                     {formatINR(entry.totalAmount)}
                   </p>
                   <p className="text-sm text-stone-500">
-                    {formatNumber(entry.totalNotes)} notes,{" "}
-                    {formatNumber(entry.totalMissing)} missing
+                    {formatNumber(entry.totalNotes)} notes
                   </p>
                   <DeleteEntryButton id={entry.id} />
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {entry.denominations.map((note) =>
-                  note.presentCount || note.missingCount ? (
+                  note.presentCount ? (
                     <span
                       key={note.id}
                       className="rounded-lg bg-[#f7f3ec] px-3 py-1.5 text-sm"
                     >
-                      ₹{note.denomination}: {note.presentCount} present
-                      {note.missingCount ? ` / ${note.missingCount} missing` : ""}
+                      ₹{note.denomination}: {note.presentCount}
                     </span>
                   ) : null,
                 )}

@@ -14,7 +14,7 @@ export default function LoginPage() {
         </div>
         <ul className="max-w-md space-y-3 text-emerald-100/80">
           <li>500, 200, 100, 50, 20, 10, 1 — count every denomination</li>
-          <li>How many notes you have, and how many are missing</li>
+          <li>How many notes you have for each denomination</li>
           <li>Today's totals on the dashboard, including in, out, and expenses</li>
         </ul>
       </section>

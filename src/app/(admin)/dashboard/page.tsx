@@ -6,6 +6,7 @@ import { DENOMINATION_STYLE, type Denomination } from "@/lib/denominations";
 import { CopyUserLink } from "@/components/CopyUserLink";
 import { RegenerateLinkButton } from "@/components/RegenerateLinkButton";
 import { DeleteEntryButton } from "@/components/DeleteEntryButton";
+import { DashboardDatePicker } from "@/components/DashboardDatePicker";
 
 export default async function DashboardPage({
   searchParams,
@@ -27,17 +28,7 @@ export default async function DashboardPage({
           <h1 className="text-3xl font-semibold">Dashboard</h1>
           <p className="mt-1 text-stone-500">{formatDisplayDate(selectedDate)}</p>
         </div>
-        <form className="flex items-center gap-3">
-          <input
-            type="date"
-            name="date"
-            defaultValue={selectedDate}
-            className="rounded-xl border border-stone-200 bg-white px-4 py-2.5"
-          />
-          <button className="rounded-xl bg-[#145c47] px-4 py-2.5 font-medium text-white">
-            View
-          </button>
-        </form>
+        <DashboardDatePicker date={selectedDate} />
       </header>
 
       <section className="rounded-2xl bg-[#0f3d2e] p-5 text-white">
@@ -112,7 +103,7 @@ export default async function DashboardPage({
         <Stat
           label="Total Notes"
           value={formatNumber(summary.notesNet)}
-          hint={`${formatNumber(summary.missingTotal)} missing notes`}
+          hint="In minus Out"
           tone="notes"
         />
       </section>
@@ -133,7 +124,6 @@ export default async function DashboardPage({
                 <th className="pb-3 font-medium">Out amount</th>
                 <th className="pb-3 font-medium">Net notes</th>
                 <th className="pb-3 font-medium">Net amount</th>
-                <th className="pb-3 font-medium">Missing</th>
               </tr>
             </thead>
             <tbody>
@@ -154,7 +144,6 @@ export default async function DashboardPage({
                     <td className="text-rose-700">{formatINR(row.outAmount)}</td>
                     <td className="font-medium">{formatNumber(row.netCount)}</td>
                     <td className="font-medium">{formatINR(row.netAmount)}</td>
-                    <td>{formatNumber(row.missingCount)}</td>
                   </tr>
                 );
               })}
@@ -190,8 +179,11 @@ export default async function DashboardPage({
 
         <div className="rounded-2xl border border-stone-200 bg-white p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Today's entries</h2>
-            <Link href="/entries" className="text-sm font-medium text-[#145c47]">
+            <h2 className="text-lg font-semibold">Entries for this date</h2>
+            <Link
+              href={`/entries?date=${selectedDate}`}
+              className="text-sm font-medium text-[#145c47]"
+            >
               View all
             </Link>
           </div>
@@ -221,11 +213,12 @@ export default async function DashboardPage({
                     </p>
                     <p className="text-sm text-stone-500">
                       {entry.employee?.name && entry.expense
-                        ? `${entry.employee.name} · ${entry.remark || "Expense"}`
-                        : entry.remark ||
-                          entry.reason ||
-                          `${entry.totalNotes} notes`}
+                        ? entry.employee.name
+                        : `${entry.totalNotes} notes`}
                     </p>
+                    {entry.remark ? (
+                      <p className="mt-1 text-sm text-stone-700">Remark: {entry.remark}</p>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-3">
                     <p

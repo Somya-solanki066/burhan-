@@ -9,6 +9,20 @@ export function parseISODate(value: string) {
   return new Date(Date.UTC(year, month - 1, day));
 }
 
+export function dateToISO(date: Date) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function dayRange(dateISO: string) {
+  const start = parseISODate(dateISO);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { gte: start, lt: end };
+}
+
 export function formatDisplayDate(value: Date | string) {
   const date = typeof value === "string" ? parseISODate(value) : value;
   return new Intl.DateTimeFormat("en-IN", {
