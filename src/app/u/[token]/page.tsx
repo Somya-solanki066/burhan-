@@ -9,7 +9,7 @@ export default async function UniqueUserLoginPage({
   const { token } = await params;
   const user = await getUserByLinkToken(token);
 
-  if (!user || !user.isActive) {
+  if (!user || !user.isActive || !user.linkToken) {
     return (
       <main className="flex min-h-full items-center justify-center p-6">
         <div className="w-full max-w-md rounded-3xl border border-stone-200 bg-white p-8 text-center">
