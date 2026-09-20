@@ -13,22 +13,30 @@ export async function loginAction(_: unknown, formData: FormData) {
     return { error: "Username and password are required." };
   }
 
-  const admin = await prisma.admin.findUnique({ where: { username } });
-  if (!admin) {
-    return { error: "Incorrect username or password." };
-  }
+  try {
+    const admin = await prisma.admin.findUnique({ where: { username } });
+    if (!admin) {
+      return { error: "Incorrect username or password." };
+    }
 
-  const ok = await bcrypt.compare(password, admin.password);
-  if (!ok) {
-    return { error: "Incorrect username or password." };
-  }
+    const ok = await bcrypt.compare(password, admin.password);
+    if (!ok) {
+      return { error: "Incorrect username or password." };
+    }
 
-  await createSession({
-    role: "admin",
-    id: admin.id,
-    username: admin.username,
-    name: admin.name,
-  });
+    await createSession({
+      role: "admin",
+      id: admin.id,
+      username: admin.username,
+      name: admin.name,
+    });
+  } catch (error) {
+    console.error("Admin login failed", error);
+    return {
+      error:
+        "Database is not connected. Add DATABASE_URL and AUTH_SECRET in Vercel, then redeploy.",
+    };
+  }
 
   redirect("/dashboard");
 }
@@ -41,22 +49,30 @@ export async function userLoginAction(_: unknown, formData: FormData) {
     return { error: "Password is required." };
   }
 
-  const user = await prisma.user.findUnique({ where: { linkToken: token } });
-  if (!user || !user.isActive) {
-    return { error: "This login link is invalid." };
-  }
+  try {
+    const user = await prisma.user.findUnique({ where: { linkToken: token } });
+    if (!user || !user.isActive) {
+      return { error: "This login link is invalid." };
+    }
 
-  const ok = await bcrypt.compare(password, user.password);
-  if (!ok) {
-    return { error: "Incorrect password." };
-  }
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+      return { error: "Incorrect password." };
+    }
 
-  await createSession({
-    role: "user",
-    id: user.id,
-    username: user.username,
-    name: user.name,
-  });
+    await createSession({
+      role: "user",
+      id: user.id,
+      username: user.username,
+      name: user.name,
+    });
+  } catch (error) {
+    console.error("User login failed", error);
+    return {
+      error:
+        "Database is not connected. Add DATABASE_URL and AUTH_SECRET in Vercel, then redeploy.",
+    };
+  }
 
   redirect("/notes");
 }
