@@ -28,6 +28,7 @@ export async function createEmployeeAction(_: unknown, formData: FormData) {
   revalidatePath("/cash-in");
   revalidatePath("/cash-out");
   revalidatePath("/notes");
+  revalidatePath("/notes/out");
   return { error: "", success: `${name} has been added.` };
 }
 
@@ -46,4 +47,5 @@ export async function toggleEmployeeAction(id: string) {
   revalidatePath("/cash-in");
   revalidatePath("/cash-out");
   revalidatePath("/notes");
+  revalidatePath("/notes/out");
 }

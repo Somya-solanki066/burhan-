@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readRoleFromToken } from "@/lib/session-token";
 
-const USER_PATHS = new Set(["/notes"]);
+function isUserAppPath(pathname: string) {
+  return pathname === "/notes" || pathname.startsWith("/notes/");
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,7 +16,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/u/");
 
   if (!role) {
-    if (pathname === "/notes") {
+    if (isUserAppPath(pathname)) {
       return NextResponse.redirect(new URL("/u", request.url));
     }
     if (!isPublic) {
@@ -24,11 +26,11 @@ export async function proxy(request: NextRequest) {
   }
 
   if (role === "user") {
-    if (pathname === "/notes") return NextResponse.next();
+    if (isUserAppPath(pathname)) return NextResponse.next();
     return NextResponse.redirect(new URL("/notes", request.url));
   }
 
-  if (isPublic || USER_PATHS.has(pathname)) {
+  if (isPublic || isUserAppPath(pathname)) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

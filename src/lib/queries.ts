@@ -159,14 +159,20 @@ export async function getFilteredEntries(filters: {
   });
 }
 
-export async function getUserDayEntries(userId: string, dateISO: string) {
+export async function getUserDayEntries(
+  userId: string,
+  dateISO: string,
+  type?: "IN" | "OUT",
+) {
   return prisma.cashEntry.findMany({
     where: {
       createdByUserId: userId,
       date: dayRange(dateISO),
+      type: type || undefined,
     },
     include: {
       employee: true,
+      expense: true,
       denominations: { orderBy: { denomination: "desc" } },
     },
     orderBy: { createdAt: "desc" },

@@ -23,6 +23,7 @@ export async function createExpenseAction(_: unknown, formData: FormData) {
 
   revalidatePath("/expenses");
   revalidatePath("/cash-out");
+  revalidatePath("/notes/out");
   revalidatePath("/dashboard");
   return { error: "", success: `${name} has been added.` };
 }
@@ -40,4 +41,5 @@ export async function toggleExpenseAction(id: string) {
 
   revalidatePath("/expenses");
   revalidatePath("/cash-out");
+  revalidatePath("/notes/out");
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useActionState } from "react";
 import { createCashEntryAction } from "@/app/actions/cash";
 import {
@@ -27,8 +27,13 @@ export function CashForm({
   expenses?: Expense[];
 }) {
   const [notes, setNotes] = useState<NoteCount[]>(emptyNoteCounts);
+  const [remark, setRemark] = useState("");
   const action = createCashEntryAction.bind(null, type);
-  const [state, formAction, pending] = useActionState(action, { error: "" });
+  const [state, formAction, pending] = useActionState(action, {
+    error: "",
+    success: "",
+    savedAt: 0,
+  });
 
   const totalAmount = useMemo(() => amountFromNotes(notes), [notes]);
   const present = useMemo(() => totalPresentNotes(notes), [notes]);
@@ -45,6 +50,12 @@ export function CashForm({
 
   const isOut = type === "OUT";
   const canSubmit = isOut ? expenses.length > 0 : employees.length > 0;
+
+  useEffect(() => {
+    if (!state?.savedAt) return;
+    setNotes(emptyNoteCounts());
+    setRemark("");
+  }, [state?.savedAt]);
 
   return (
     <form action={formAction} className="space-y-6">
@@ -103,6 +114,8 @@ export function CashForm({
             <span className="text-sm font-medium text-stone-600">Remark</span>
             <input
               name="remark"
+              value={remark}
+              onChange={(event) => setRemark(event.target.value)}
               placeholder="Optional note"
               className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 outline-none focus:ring-4 focus:ring-[#1f7a60]/15"
             />
@@ -115,6 +128,8 @@ export function CashForm({
           <span className="text-sm font-medium text-stone-600">Remark</span>
           <input
             name="remark"
+            value={remark}
+            onChange={(event) => setRemark(event.target.value)}
             placeholder="What was this expense for"
             className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 outline-none focus:ring-4 focus:ring-[#1f7a60]/15"
           />
@@ -162,6 +177,11 @@ export function CashForm({
       {state?.error ? (
         <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {state.error}
+        </p>
+      ) : null}
+      {state?.success ? (
+        <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {state.success} Add another entry below.
         </p>
       ) : null}
     </form>
